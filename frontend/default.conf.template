@@ -2,9 +2,9 @@ server {
     listen 80;
     server_name localhost;
 
-    # Resolver interno de Docker (127.0.0.11) para resolución DNS dinámica.
-    # Esto evita que Nginx falle al inicio si el upstream no está listo todavía.
-    resolver 127.0.0.11 valid=30s;
+    # Usar el resolver detectado dinámicamente desde /etc/resolv.conf
+    # Esto asegura compatibilidad con cualquier entorno (Render, AWS, Local)
+    resolver $DNS_RESOLVER valid=10s;
 
     location / {
         root /usr/share/nginx/html;
@@ -13,8 +13,8 @@ server {
     }
 
     location /api/ {
-        # Asignar el upstream a una variable fuerza a Nginx a resolver el DNS
-        # en cada petición (runtime) en lugar de al arrancar (startup).
+        # Resolución perezosa (Lazy Resolution) usando variable
+        # Nginx resolverá el dominio en runtime usando $DNS_RESOLVER
         set $upstream_app http://$API_BASE_URL;
 
         rewrite ^/api/(.*) /$1 break;

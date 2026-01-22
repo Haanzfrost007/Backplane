@@ -1,0 +1,11 @@
+#!/bin/sh
+# Extract the first nameserver from /etc/resolv.conf
+export DNS_RESOLVER=$(awk '/nameserver/ {print $2; exit}' /etc/resolv.conf)
+
+# Fallback if no nameserver found (unlikely in a container)
+if [ -z "$DNS_RESOLVER" ]; then
+    echo "Warning: No nameserver found in /etc/resolv.conf, defaulting to 8.8.8.8"
+    export DNS_RESOLVER=8.8.8.8
+fi
+
+echo "Configured Nginx Resolver: $DNS_RESOLVER"
