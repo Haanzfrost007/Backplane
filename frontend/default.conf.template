@@ -9,19 +9,23 @@ server {
     }
 
     location /api/ {
-        # Usamos envsubst para inyectar la URL completa (incluyendo http/https)
-        # Esto genera una configuración estática que Nginx resuelve al inicio.
-        # Al usar la URL pública de Render, garantizamos que el DNS funcione.
+        # Volvemos a la estrategia segura: Nginx pone el protocolo, Render solo el host.
+        # Esto evita problemas de formato en la URL inyectada.
         rewrite ^/api/(.*) /$1 break;
-        proxy_pass $API_BASE_URL;
+        
+        # IMPORTANTE: Usamos un resolver público (Google) como fallback universal
+        # para resolver la URL pública de Render si el DNS interno falla.
+        resolver 8.8.8.8 valid=30s;
+        set $upstream_endpoint https://$API_BASE_URL;
+        
+        proxy_pass $upstream_endpoint;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $proxy_host; # Importante para HTTPS/SNI
+        proxy_set_header Host $API_BASE_URL; # Usamos el host real para SNI
         proxy_cache_bypass $http_upgrade;
         
-        # Necesario si el upstream es HTTPS (Render Public URL)
         proxy_ssl_server_name on;
     }
 }
