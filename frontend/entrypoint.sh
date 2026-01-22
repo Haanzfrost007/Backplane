@@ -1,4 +1,5 @@
 #!/bin/sh
+# Trigger deployment check
 set -e
 
 echo "Starting Frontend Entrypoint..."
