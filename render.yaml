@@ -92,4 +92,4 @@ databases:
   - name: backplane-db
     plan: free
     databaseName: auth_db
-    user: postgres
+    user: backplane_user
