@@ -19,18 +19,22 @@ case "$API_BASE_URL" in
 esac
 
 # 2. Fix DNS_RESOLVER
-# If running in Render, force Google DNS or verify system DNS
-if [ "$RENDER" = "true" ]; then
-    echo "Detected Render environment. Enforcing Google DNS (8.8.8.8) to avoid local resolver issues."
+# ALWAYS try to detect the system DNS first. This is crucial for:
+# - Render internal service discovery (needs Render's internal DNS)
+# - Kubernetes/Docker internal DNS
+# - Local development
+DETECTED_DNS=$(awk '/nameserver/ {print $2; exit}' /etc/resolv.conf)
+echo "Detected system DNS from /etc/resolv.conf: $DETECTED_DNS"
+
+if [ -n "$DETECTED_DNS" ]; then
+    # If we found a nameserver in /etc/resolv.conf, USE IT.
+    # This fixes the issue where 8.8.8.8 cannot resolve internal Render hostnames.
+    echo "Using detected system DNS: $DETECTED_DNS"
+    export DNS_RESOLVER="$DETECTED_DNS"
+else
+    # Fallback only if no DNS detected (rare)
+    echo "WARNING: No DNS detected in /etc/resolv.conf. Falling back to 8.8.8.8"
     export DNS_RESOLVER="8.8.8.8"
-elif [ "$DNS_RESOLVER" = "127.0.0.11" ]; then
-    # Local Docker or other environment
-    DETECTED_DNS=$(awk '/nameserver/ {print $2; exit}' /etc/resolv.conf)
-    echo "Detected system DNS: $DETECTED_DNS"
-    
-    if [ -n "$DETECTED_DNS" ] && [ "$DETECTED_DNS" != "127.0.0.11" ]; then
-        export DNS_RESOLVER="$DETECTED_DNS"
-    fi
 fi
 
 echo "Final API_BASE_URL='$API_BASE_URL'"
@@ -42,8 +46,6 @@ if [ -z "$API_BASE_URL" ]; then
 fi
 
 echo "Generating Nginx configuration using sed..."
-# Usamos sed en lugar de envsubst para garantizar que usamos las variables modificadas
-# y evitar problemas de comportamiento de envsubst con variables exportadas en sh/alpine.
 sed -e "s|\${API_BASE_URL}|$API_BASE_URL|g" \
     -e "s|\${DNS_RESOLVER}|$DNS_RESOLVER|g" \
     /etc/nginx/default.conf.tpl > /etc/nginx/conf.d/default.conf
