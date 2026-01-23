@@ -88,7 +88,7 @@ server {
         
         # Error handling
         proxy_intercept_errors on;
-        error_page 502 = @backend_down;
+        error_page 502 504 = @backend_down;
 
         # Timeouts (Render Cold Start Fix)
         proxy_connect_timeout 300s;
