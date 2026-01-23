@@ -72,8 +72,12 @@ server {
         # Runtime variable trick:
         # Nginx won't crash at startup if this host is missing.
         # It will try to resolve it only when a request comes in.
-        set \$upstream_target "$API_BASE_URL";
-        proxy_pass \$upstream_target;
+        # IMPORTANT: Use direct string interpolation to avoid "uninitialized variable" errors
+        set \$upstream_host "api-gateway";
+        set \$upstream_port "10000";
+        set \$upstream_proto "http";
+        
+        proxy_pass \$upstream_proto://\$upstream_host:\$upstream_port;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
