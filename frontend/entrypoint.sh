@@ -69,9 +69,12 @@ server {
         # Strip /api/ prefix
         rewrite ^/api/(.*) /\$1 break;
         
-        # FIX: Remove variable usage for proxy_pass to guarantee valid URL
-        # We rely on the resolver directive above to handle DNS updates
-        proxy_pass http://api-gateway:10000;
+        # Runtime variable trick (REDUX):
+        # We MUST use a variable to prevent startup crash.
+        # But we must construct it carefully to avoid "uninitialized variable" errors.
+        # This syntax is safe in modern Nginx.
+        set \$upstream_url "http://api-gateway:10000";
+        proxy_pass \$upstream_url;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
