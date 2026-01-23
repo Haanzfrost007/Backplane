@@ -67,7 +67,10 @@ server {
         
         # Runtime variable for proxy_pass to prevent startup crash
         set \$upstream_target "$API_BASE_URL";
-        proxy_pass \$upstream_target;
+        
+        # When using variables in proxy_pass, we MUST specify the full URL (uri + args)
+        # $uri is the rewritten path (e.g., /health)
+        proxy_pass \$upstream_target\$uri\$is_args\$args;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
