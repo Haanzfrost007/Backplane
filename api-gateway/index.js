@@ -88,6 +88,16 @@ const onProxyRes = (proxyRes, req, res) => {
     }
 };
 
+// --- Generic Proxy Error Handler ---
+const genericErrorHandler = (serviceName) => (err, req, res) => {
+    console.error(`❌ Network Error on /${serviceName}:`, err.message);
+    res.status(503).json({ 
+        message: `Service ${serviceName} Unavailable`, 
+        error: err.message,
+        suggestion: "Check if the service is awake (Cold Start) or if DNS is failing."
+    });
+};
+
 // Rutas de proxy
 // Auth Service
 app.use('/auth', createProxyMiddleware({ 
@@ -96,17 +106,22 @@ app.use('/auth', createProxyMiddleware({
     pathRewrite: {
         '^/auth': '',
     },
+    onError: genericErrorHandler('auth'),
+    timeout: 30000, // 30s timeout
+    proxyTimeout: 30000,
 }));
 
-// Payment Service with Circuit Breaker & Rate Limiter
+// Payment Service (Uses Custom Circuit Breaker)
 app.use('/payments', paymentLimiter, checkPaymentBreaker, createProxyMiddleware({ 
     target: ensureProtocol(process.env.PAYMENT_SERVICE_URL) || 'http://payment-service:3001', 
     changeOrigin: true,
     pathRewrite: {
         '^/payments': '',
     },
+    onProxyRes: onProxyRes,
     onError: onProxyError,
-    onProxyRes: onProxyRes
+    timeout: 30000,
+    proxyTimeout: 30000,
 }));
 
 // Notification Service
@@ -116,6 +131,9 @@ app.use('/notifications', createProxyMiddleware({
     pathRewrite: {
         '^/notifications': '',
     },
+    onError: genericErrorHandler('notifications'),
+    timeout: 30000,
+    proxyTimeout: 30000,
 }));
 
 app.get('/health', (req, res) => {
