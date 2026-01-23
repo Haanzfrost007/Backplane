@@ -41,6 +41,33 @@ esac
 # Strip trailing slash
 API_BASE_URL=${API_BASE_URL%/}
 
+# --- PRE-RESOLVE HOSTNAME (Fix for Nginx Resolver Search Domain Limitation) ---
+# Nginx resolver does not respect /etc/resolv.conf search domains.
+# We pre-resolve the hostname to an IP using system tools (which DO respect search domains).
+
+# Extract Hostname (remove protocol and port)
+TEMP_URL=${API_BASE_URL#*://}
+TEMP_HOST=${TEMP_URL%%:*}
+TEMP_HOST=${TEMP_HOST%%/*}
+
+echo "Attempting to pre-resolve host: '$TEMP_HOST'"
+# Use getent or nslookup
+if command -v getent >/dev/null; then
+    RESOLVED_IP=$(getent hosts "$TEMP_HOST" | awk '{ print $1 }' | head -n 1)
+elif command -v nslookup >/dev/null; then
+    # Parse nslookup output, skipping the DNS server address (first 2-3 lines)
+    RESOLVED_IP=$(nslookup "$TEMP_HOST" | awk '/^Address: / { print $2 }' | tail -n +2 | head -n 1)
+fi
+
+if [ -n "$RESOLVED_IP" ]; then
+    echo "✅ Successfully resolved '$TEMP_HOST' to '$RESOLVED_IP'"
+    # Replace host with IP in API_BASE_URL
+    API_BASE_URL=$(echo "$API_BASE_URL" | sed "s/$TEMP_HOST/$RESOLVED_IP/")
+    echo "    -> Updated API_BASE_URL: $API_BASE_URL"
+else
+    echo "⚠️  Could not pre-resolve '$TEMP_HOST'. Leaving as is."
+fi
+
 echo ">>> FINAL API_BASE_URL: '$API_BASE_URL' <<<"
 
 # --- 2. DETECT SYSTEM DNS ---
