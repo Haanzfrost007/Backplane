@@ -59,18 +59,14 @@ server {
     }
 
     location /api/ {
-        # Dynamic DNS Resolution (Docker internal)
-        resolver $DNS_RESOLVER valid=10s ipv6=off;
+        # Using direct substitution to use system resolver at startup
+        # This avoids "Host not found" issues with dynamic resolvers in some environments
         
-        # Runtime variable for proxy_pass to prevent startup crash
-        set \$upstream_target "$API_BASE_URL";
-
         # Strip /api/ prefix
         rewrite ^/api/(.*) /\$1 break;
         
-        # When using variables in proxy_pass, we MUST specify the full URL (uri + args)
-        # \$uri is the rewritten path (e.g., /health)
-        proxy_pass \$upstream_target\$uri\$is_args\$args;
+        # Direct proxy_pass using the substituted variable (no Nginx variables)
+        proxy_pass $API_BASE_URL;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
