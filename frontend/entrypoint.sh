@@ -35,39 +35,62 @@ echo "----------------------------------------"
 # --- 2. HOST RESOLUTION CHECK ---
 # Extract hostname to check connectivity
 # Remove protocol (http:// or https://)
-HOST_ONLY=$(echo $API_BASE_URL | sed 's|http://||' | sed 's|https://||' | cut -d: -f1)
+HOST_WITHOUT_PROTO=$(echo $API_BASE_URL | sed 's|http://||' | sed 's|https://||')
+HOSTNAME_ONLY=$(echo $HOST_WITHOUT_PROTO | cut -d: -f1)
+PORT_ONLY=$(echo $HOST_WITHOUT_PROTO | cut -d: -f2 -s)
 
-echo "Waiting for host resolution: $HOST_ONLY"
+# Default port if missing
+if [ -z "$PORT_ONLY" ]; then
+    PORT_ONLY="80"
+fi
+
+echo "Resolving host: $HOSTNAME_ONLY (Port: $PORT_ONLY)"
 
 # Wait loop (max 60 seconds)
 i=0
+RESOLVED_IP=""
 while [ $i -lt 60 ]; do
-    # Try nslookup (now installed via bind-tools)
-    if nslookup "$HOST_ONLY" > /dev/null 2>&1; then
-         echo "✅ Host $HOST_ONLY resolved successfully."
+    # Try dig first (cleaner output)
+    if [ -x "$(command -v dig)" ]; then
+        RESOLVED_IP=$(dig +short "$HOSTNAME_ONLY" | head -n1)
+    fi
+    
+    # Fallback to nslookup if dig failed or returned empty
+    if [ -z "$RESOLVED_IP" ]; then
+        RESOLVED_IP=$(nslookup "$HOSTNAME_ONLY" 2>/dev/null | awk '/^Address: / { print $2 }' | head -n1)
+    fi
+
+    if [ -n "$RESOLVED_IP" ]; then
+         echo "✅ Host $HOSTNAME_ONLY resolved to IP: $RESOLVED_IP"
          break
     fi
     
-    # Fallback/Debug: Show why it failed every 10 seconds
+    # Debug every 10s
     if [ $((i % 10)) -eq 0 ]; then
-        echo "🔍 Debug: nslookup output for $HOST_ONLY:"
-        nslookup "$HOST_ONLY" || true
+        echo "🔍 Debug: Resolution failed for $HOSTNAME_ONLY"
+        nslookup "$HOSTNAME_ONLY" || true
     fi
 
-    echo "⏳ Waiting for $HOST_ONLY to be resolvable... ($i/60)"
+    echo "⏳ Waiting for $HOSTNAME_ONLY to be resolvable... ($i/60)"
     sleep 1
     i=$((i+1))
 done
 
-if [ $i -ge 60 ]; then
-    echo "❌ ERROR: Timeout waiting for $HOST_ONLY. Starting Nginx anyway (might crash)."
+if [ -z "$RESOLVED_IP" ]; then
+    echo "❌ ERROR: Could not resolve $HOSTNAME_ONLY after 60s. Nginx will likely fail."
+    # Fallback to original hostname hoping Nginx can see it later (unlikely)
+    RESOLVED_UPSTREAM="$API_BASE_URL"
+else
+    # Construct URL with IP to bypass Nginx resolver issues
+    RESOLVED_UPSTREAM="http://$RESOLVED_IP:$PORT_ONLY"
+    echo "🎯 using Resolved Upstream: $RESOLVED_UPSTREAM"
 fi
 
 # --- 3. GENERATE CONFIG FILE ---
 # We use cat with EOF to avoid sed issues.
 # We escape \$ for Nginx variables that should NOT be substituted by shell.
-# IMPORTANT: We use DIRECT proxy_pass ($API_BASE_URL) instead of variables.
-# This forces Nginx to use the System Resolver (libc) at startup, which respects search domains.
+# IMPORTANT: We use the RESOLVED IP address in proxy_pass.
+# This bypasses Nginx's resolver limitations with search domains.
 
 cat > /etc/nginx/conf.d/default.conf <<EOF
 server {
@@ -84,9 +107,8 @@ server {
         # Strip /api/ prefix
         rewrite ^/api/(.*) /\$1 break;
         
-        # Direct proxy_pass using the substituted variable (Hardcoded at startup)
-        # This uses the system resolver (supports search domains like .render.internal)
-        proxy_pass $API_BASE_URL;
+        # Direct proxy_pass using the RESOLVED IP
+        proxy_pass $RESOLVED_UPSTREAM;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
