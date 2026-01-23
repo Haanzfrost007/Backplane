@@ -53,7 +53,7 @@ echo "Resolving host: $TARGET_HOST"
 
 resolve_with_retries() {
     local host=$1
-    local retries=30
+    local retries=90
     local count=0
     
     until nslookup "$host" > /dev/null 2>&1 || [ $count -eq $retries ]; do
@@ -73,7 +73,7 @@ resolve_with_retries() {
 if resolve_with_retries "$TARGET_HOST"; then
     echo "✅ Host '$TARGET_HOST' is resolvable."
 else
-    echo "⚠️  Host '$TARGET_HOST' failed to resolve after 30s."
+    echo "⚠️  Host '$TARGET_HOST' failed to resolve after 90s."
     
     # 2. Fallback to 'api-gateway' if we weren't already trying it
     if [ "$TARGET_HOST" != "api-gateway" ]; then
@@ -85,8 +85,14 @@ else
             echo "    -> New API_BASE_URL: $API_BASE_URL"
         else
              echo "❌ Critical: Neither '$TARGET_HOST' nor 'api-gateway' could be resolved."
-             echo "   Nginx will likely crash. Check Render Service Name and networking."
+             echo "   ⚠️  SWITCHING TO SAFE MODE (localhost) TO PREVENT CRASH."
+             # Use localhost to allow Nginx to start. Requests will fail with 502, but the container stays up.
+             API_BASE_URL="http://127.0.0.1:10000"
         fi
+    else
+        # Even if target was already api-gateway and failed
+        echo "   ⚠️  SWITCHING TO SAFE MODE (localhost) TO PREVENT CRASH."
+        API_BASE_URL="http://127.0.0.1:10000"
     fi
 fi
 
