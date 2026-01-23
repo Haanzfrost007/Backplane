@@ -51,16 +51,41 @@ TEMP_HOST=${TEMP_URL%%:*}
 TEMP_HOST=${TEMP_HOST%%/*}
 
 echo "Attempting to pre-resolve host: '$TEMP_HOST'"
-# Use getent or nslookup
-if command -v getent >/dev/null; then
-    RESOLVED_IP=$(getent hosts "$TEMP_HOST" | awk '{ print $1 }' | head -n 1)
-elif command -v nslookup >/dev/null; then
-    # Parse nslookup output, skipping the DNS server address (first 2-3 lines)
-    RESOLVED_IP=$(nslookup "$TEMP_HOST" | awk '/^Address: / { print $2 }' | tail -n +2 | head -n 1)
+
+# Helper function to resolve
+resolve_host() {
+    local host=$1
+    if command -v getent >/dev/null; then
+        getent hosts "$host" | awk '{ print $1 }' | head -n 1
+    elif command -v nslookup >/dev/null; then
+        # Parse nslookup output, skipping the DNS server address
+        nslookup "$host" | awk '/^Address: / { print $2 }' | tail -n +2 | head -n 1
+    fi
+}
+
+# 1. Try resolving the provided host
+RESOLVED_IP=$(resolve_host "$TEMP_HOST")
+
+# 2. If that fails, try 'api-gateway' (service name) as fallback
+if [ -z "$RESOLVED_IP" ]; then
+    echo "⚠️  Could not pre-resolve '$TEMP_HOST'. Trying fallback 'api-gateway'..."
+    RESOLVED_IP=$(resolve_host "api-gateway")
+fi
+
+# 3. If still empty, try 'api-gateway' with search domains explicitly if needed (usually handled by system)
+# But let's debug external DNS too
+if [ -z "$RESOLVED_IP" ]; then
+    echo "❌ Failed to resolve internal hosts. Testing external DNS (google.com)..."
+    EXT_IP=$(resolve_host "google.com")
+    if [ -n "$EXT_IP" ]; then
+        echo "   External DNS works ($EXT_IP). Internal DNS might be broken or service name is wrong."
+    else
+        echo "   External DNS also FAILED. Network/DNS configuration issue."
+    fi
 fi
 
 if [ -n "$RESOLVED_IP" ]; then
-    echo "✅ Successfully resolved '$TEMP_HOST' to '$RESOLVED_IP'"
+    echo "✅ Successfully resolved to '$RESOLVED_IP'"
     # Replace host with IP in API_BASE_URL
     API_BASE_URL=$(echo "$API_BASE_URL" | sed "s/$TEMP_HOST/$RESOLVED_IP/")
     echo "    -> Updated API_BASE_URL: $API_BASE_URL"
