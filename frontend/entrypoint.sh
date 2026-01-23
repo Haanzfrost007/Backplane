@@ -62,11 +62,11 @@ server {
         # Dynamic DNS Resolution
         resolver $DNS_RESOLVER valid=10s;
         
-        # Strip /api/ prefix
-        rewrite ^/api/(.*) /\$1 break;
-        
         # Runtime variable for proxy_pass to prevent startup crash
         set \$upstream_target "$API_BASE_URL";
+
+        # Strip /api/ prefix
+        rewrite ^/api/(.*) /\$1 break;
         
         # When using variables in proxy_pass, we MUST specify the full URL (uri + args)
         # $uri is the rewritten path (e.g., /health)
