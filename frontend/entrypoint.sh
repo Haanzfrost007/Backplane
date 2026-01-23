@@ -33,8 +33,8 @@ if [ -n "$DETECTED_DNS" ]; then
     echo "Using system DNS: $DETECTED_DNS"
     export DNS_RESOLVER="$DETECTED_DNS"
 else
-    echo "Using fallback DNS: 8.8.8.8"
-    export DNS_RESOLVER="8.8.8.8"
+    echo "Using fallback DNS: 127.0.0.11"
+    export DNS_RESOLVER="127.0.0.11"
 fi
 
 echo "----------------------------------------"
@@ -59,8 +59,8 @@ server {
     }
 
     location /api/ {
-        # Dynamic DNS Resolution
-        resolver $DNS_RESOLVER valid=10s;
+        # Dynamic DNS Resolution (Docker internal)
+        resolver $DNS_RESOLVER valid=10s ipv6=off;
         
         # Runtime variable for proxy_pass to prevent startup crash
         set \$upstream_target "$API_BASE_URL";
@@ -69,7 +69,7 @@ server {
         rewrite ^/api/(.*) /\$1 break;
         
         # When using variables in proxy_pass, we MUST specify the full URL (uri + args)
-        # $uri is the rewritten path (e.g., /health)
+        # \$uri is the rewritten path (e.g., /health)
         proxy_pass \$upstream_target\$uri\$is_args\$args;
         
         proxy_http_version 1.1;
