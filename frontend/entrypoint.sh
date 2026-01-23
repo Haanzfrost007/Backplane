@@ -32,24 +32,50 @@ echo "CONFIGURING NGINX WITH:"
 echo "API_BASE_URL = $API_BASE_URL"
 echo "----------------------------------------"
 
-# --- 2. CONFIGURE RESOLVER ---
-# Detect system DNS (critical for Render internal domains)
-DNS_RESOLVER=$(awk '/nameserver/ {print $2; exit}' /etc/resolv.conf)
+    # Fallback to nslookup if dig failed or returned empty
+    if [ -z "$RESOLVED_IP" ]; then
+        RESOLVED_IP=$(nslookup "$HOSTNAME_ONLY" 2>/dev/null | awk '/^Address: / { print $2 }' | head -n1)
+    fi
+    
+    # Fallback: Try "api-gateway" if the specific hostname fails (handles slugs)
+    if [ -z "$RESOLVED_IP" ] && echo "$HOSTNAME_ONLY" | grep -q "api-gateway"; then
+         echo "⚠️ Resolution failed for $HOSTNAME_ONLY. Trying fallback: api-gateway"
+         FALLBACK_IP=$(nslookup "api-gateway" 2>/dev/null | awk '/^Address: / { print $2 }' | head -n1)
+         if [ -n "$FALLBACK_IP" ]; then
+             echo "✅ Fallback 'api-gateway' resolved to IP: $FALLBACK_IP"
+             RESOLVED_IP="$FALLBACK_IP"
+         fi
+    fi
 
-if [ -z "$DNS_RESOLVER" ]; then
-    echo "⚠️  WARNING: No DNS resolver found in /etc/resolv.conf. Defaulting to Google DNS (8.8.8.8)."
-    echo "    Internal service names like 'api-gateway' WILL NOT RESOLVE."
-    DNS_RESOLVER="8.8.8.8"
-else
-    echo "✅ Detected System DNS: $DNS_RESOLVER"
+    if [ -n "$RESOLVED_IP" ]; then
+         echo "✅ Host $HOSTNAME_ONLY resolved to IP: $RESOLVED_IP"
+         break
+    fi
+    
+    # Debug every 10s
+    if [ $((i % 10)) -eq 0 ]; then
+        echo "🔍 Debug: Resolution failed for $HOSTNAME_ONLY"
+        nslookup "$HOSTNAME_ONLY" || true
+    fi
+
+    echo "⏳ Waiting for $HOSTNAME_ONLY to be resolvable... ($i/60)"
+    sleep 1
+    i=$((i+1))
+done
+
+# Force loop to continue until resolution success (BLOCKING)
+# This prevents Nginx from starting until we have a valid IP
+if [ -z "$RESOLVED_IP" ]; then
+    echo "❌ ERROR: Could not resolve $HOSTNAME_ONLY. Retrying indefinitely..."
+    exec /entrypoint.sh
 fi
 
 # --- 3. GENERATE CONFIG FILE ---
 # We use cat with EOF to avoid sed issues.
 # We escape \$ for Nginx variables that should NOT be substituted by shell.
-# STRATEGY: Runtime Resolution.
-# We use a variable for proxy_pass to force Nginx to resolve the hostname at REQUEST time,
-# not at STARTUP time. This prevents "host not found" crashes if the API Gateway is slow to start.
+# STRATEGY: Hardcoded IP.
+# We resolved the IP in bash, so we put it directly into the config.
+# This eliminates ALL DNS and variable issues in Nginx.
 
 cat > /etc/nginx/conf.d/default.conf <<EOF
 server {
@@ -63,18 +89,12 @@ server {
     }
 
     location /api/ {
-        # Use the detected system resolver
-        resolver $DNS_RESOLVER valid=10s ipv6=off;
-        
         # Strip /api/ prefix
         rewrite ^/api/(.*) /\$1 break;
         
-        # Runtime variable trick (REDUX):
-        # We MUST use a variable to prevent startup crash.
-        # But we must construct it carefully to avoid "uninitialized variable" errors.
-        # This syntax is safe in modern Nginx.
-        set \$upstream_url "http://api-gateway:10000";
-        proxy_pass \$upstream_url;
+        # Direct proxy_pass using the RESOLVED IP
+        # No variables, no resolvers, no magic. Just the IP.
+        proxy_pass http://$RESOLVED_IP:10000;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
