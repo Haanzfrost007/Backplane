@@ -1,14 +1,19 @@
 #!/bin/sh
 set -e
 
-echo "Starting Frontend Entrypoint (Universal Mode)..."
+echo "=== STARTING FRONTEND ENTRYPOINT ==="
+echo "Mode: Robust DNS + Public/Private Fallback"
 
-# --- 1. ENV VAR SETUP ---
+# --- 1. DEBUG ENV VARS ---
+echo ">>> RAW API_BASE_URL: '$API_BASE_URL' <<<"
 
-# Fix API_BASE_URL
 if [ -z "$API_BASE_URL" ]; then
-    echo "WARNING: API_BASE_URL is empty. Defaulting to internal service."
+    echo "⚠️  WARNING: API_BASE_URL is NOT set by Render!"
+    echo "    This suggests 'fromService: property: url' failed or service is not ready."
+    echo "    Falling back to internal default: http://api-gateway:10000"
     export API_BASE_URL="http://api-gateway:10000"
+else
+    echo "✅ API_BASE_URL provided by environment."
 fi
 
 # Ensure protocol
@@ -24,25 +29,18 @@ esac
 # Strip trailing slash
 API_BASE_URL=${API_BASE_URL%/}
 
-echo "----------------------------------------"
-echo "CONFIGURING NGINX WITH:"
-echo "API_BASE_URL = $API_BASE_URL"
-echo "----------------------------------------"
+echo ">>> FINAL API_BASE_URL: '$API_BASE_URL' <<<"
 
 # --- 2. DETECT SYSTEM DNS ---
-# We MUST use the system DNS (usually 127.0.0.11 in Docker) to resolve:
-# a) Internal names (api-gateway)
-# b) Public names (via upstream forwarding)
-# Using Google DNS (8.8.8.8) breaks internal name resolution.
-
+# We use system DNS first (127.0.0.11), then Google (8.8.8.8) as backup.
 echo "Reading /etc/resolv.conf:"
 cat /etc/resolv.conf
 
 DNS_RESOLVER=$(awk '/nameserver/ {print $2; exit}' /etc/resolv.conf)
 
 if [ -z "$DNS_RESOLVER" ]; then
-    echo "⚠️  WARNING: No DNS resolver found. Defaulting to 127.0.0.11 (Docker DNS)."
-    DNS_RESOLVER="127.0.0.11"
+    echo "⚠️  WARNING: No DNS resolver found. Using Google DNS."
+    DNS_RESOLVER="8.8.8.8"
 else
     echo "✅ Detected System DNS: $DNS_RESOLVER"
 fi
@@ -63,12 +61,12 @@ server {
 
     # Proxy API requests
     location /api/ {
-        # 1. Use the DETECTED SYSTEM RESOLVER.
-        #    This allows resolving both 'api-gateway' (internal) and public URLs.
-        resolver $DNS_RESOLVER valid=5s ipv6=off;
+        # 1. Use System DNS + Google DNS Fallback
+        #    This maximizes chances of resolving either internal 'api-gateway' OR public 'https://...'
+        resolver $DNS_RESOLVER 8.8.8.8 valid=5s ipv6=off;
         
         # 2. Lazy Resolution (Variable Trick)
-        #    This prevents Nginx from crashing at startup if the host isn't ready yet.
+        #    Prevents startup crash if host is temporarily unreachable
         set \$upstream_target "$API_BASE_URL";
         
         # 3. Strip /api/ prefix
@@ -77,7 +75,7 @@ server {
         # 4. Proxy to the variable
         proxy_pass \$upstream_target;
         
-        # SSL Support (in case API_BASE_URL is https)
+        # SSL Support (Universal)
         proxy_ssl_server_name on;
         proxy_ssl_protocols TLSv1.2 TLSv1.3;
         
@@ -96,7 +94,7 @@ server {
     # Custom 502 page for JSON clients
     location @backend_down {
         default_type application/json;
-        return 502 '{"error": "Bad Gateway", "message": "Backend service ($API_BASE_URL) is not resolving. DNS: $DNS_RESOLVER. Check logs."}';
+        return 502 '{"error": "Bad Gateway", "message": "Backend ($API_BASE_URL) is unreachable. Check logs for DNS errors."}';
     }
 }
 EOF
