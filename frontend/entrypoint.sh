@@ -44,14 +44,15 @@ API_BASE_URL=${API_BASE_URL%/}
 echo ">>> FINAL API_BASE_URL: '$API_BASE_URL' <<<"
 
 # --- 2. DETECT SYSTEM DNS ---
-# We use system DNS first (127.0.0.11), then Google (8.8.8.8) as backup.
+# We use system DNS first, then Google (8.8.8.8) as backup.
 echo "Reading /etc/resolv.conf:"
 cat /etc/resolv.conf
 
-DNS_RESOLVER=$(awk '/nameserver/ {print $2; exit}' /etc/resolv.conf)
+# Extract only valid IPv4 nameservers to avoid IPv6 issues in Nginx
+DNS_RESOLVER=$(awk '/nameserver/ {print $2}' /etc/resolv.conf | grep -v ":" | head -n 1)
 
 if [ -z "$DNS_RESOLVER" ]; then
-    echo "⚠️  WARNING: No DNS resolver found. Using Google DNS."
+    echo "⚠️  WARNING: No IPv4 DNS resolver found. Using Google DNS."
     DNS_RESOLVER="8.8.8.8"
 else
     echo "✅ Detected System DNS: $DNS_RESOLVER"

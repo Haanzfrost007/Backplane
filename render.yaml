@@ -84,6 +84,7 @@ services:
         value: 80
       - key: API_BASE_URL
         fromService:
+          type: web
           name: api-gateway
           property: hostport
 
