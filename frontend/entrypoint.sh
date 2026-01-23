@@ -42,15 +42,16 @@ echo "Waiting for host resolution: $HOST_ONLY"
 # Wait loop (max 60 seconds)
 i=0
 while [ $i -lt 60 ]; do
-    if getent hosts "$HOST_ONLY" > /dev/null 2>&1; then
-        echo "✅ Host $HOST_ONLY resolved successfully."
-        break
+    # Try nslookup (now installed via bind-tools)
+    if nslookup "$HOST_ONLY" > /dev/null 2>&1; then
+         echo "✅ Host $HOST_ONLY resolved successfully."
+         break
     fi
     
-    # Fallback for environments without getent (try nslookup)
-    if nslookup "$HOST_ONLY" > /dev/null 2>&1; then
-         echo "✅ Host $HOST_ONLY resolved successfully (via nslookup)."
-         break
+    # Fallback/Debug: Show why it failed every 10 seconds
+    if [ $((i % 10)) -eq 0 ]; then
+        echo "🔍 Debug: nslookup output for $HOST_ONLY:"
+        nslookup "$HOST_ONLY" || true
     fi
 
     echo "⏳ Waiting for $HOST_ONLY to be resolvable... ($i/60)"
