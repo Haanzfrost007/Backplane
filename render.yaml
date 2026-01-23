@@ -83,7 +83,9 @@ services:
       - key: PORT
         value: 80
       - key: API_BASE_URL
-        value: http://api-gateway:10000
+        fromService:
+          name: api-gateway
+          property: hostport
 
 databases:
   - name: backplane-db

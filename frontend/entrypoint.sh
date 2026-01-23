@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "Starting Frontend Entrypoint (Non-Blocking Mode)..."
+echo "Starting Frontend Entrypoint..."
 
 # --- 1. ENV VAR SETUP ---
 
@@ -29,20 +29,10 @@ echo "CONFIGURING NGINX WITH:"
 echo "API_BASE_URL = $API_BASE_URL"
 echo "----------------------------------------"
 
-# --- 2. DETECT DNS RESOLVER ---
-# Critical for Render: Use the system's DNS resolver from /etc/resolv.conf
-DNS_RESOLVER=$(awk '/nameserver/ {print $2; exit}' /etc/resolv.conf)
-
-if [ -z "$DNS_RESOLVER" ]; then
-    echo "⚠️  WARNING: No DNS resolver found. Defaulting to Google DNS (8.8.8.8)."
-    DNS_RESOLVER="8.8.8.8"
-else
-    echo "✅ Detected System DNS: $DNS_RESOLVER"
-fi
-
-# --- 3. GENERATE CONFIG FILE ---
-# We use a runtime variable for proxy_pass to prevent Nginx from crashing 
-# if the host is not resolvable at startup (Lazy Resolution).
+# --- 2. GENERATE CONFIG FILE ---
+# We use direct substitution for proxy_pass.
+# We rely on Render's 'fromService' to provide a valid, resolvable host:port.
+# We trust the system resolver (libc) to handle the DNS lookup at startup.
 
 cat > /etc/nginx/conf.d/default.conf <<EOF
 server {
@@ -58,18 +48,12 @@ server {
 
     # Proxy API requests
     location /api/ {
-        # 1. Use detected resolver
-        resolver $DNS_RESOLVER valid=10s ipv6=off;
-        
-        # 2. Use a variable for the upstream target to force lazy resolution
-        #    This prevents "host not found" startup errors.
-        set \$upstream_target "$API_BASE_URL";
-        
-        # 3. Strip /api/ prefix
+        # Strip /api/ prefix
         rewrite ^/api/(.*) /\$1 break;
         
-        # 4. Proxy to the variable
-        proxy_pass \$upstream_target;
+        # Proxy to the backend
+        # We use the shell variable directly here, so it gets hardcoded in the config.
+        proxy_pass $API_BASE_URL;
         
         # Headers
         proxy_http_version 1.1;
@@ -78,7 +62,7 @@ server {
         proxy_set_header Host \$host;
         proxy_cache_bypass \$http_upgrade;
         
-        # Error handling for bad gateway (upstream down/booting)
+        # Error handling
         proxy_intercept_errors on;
         error_page 502 = @backend_down;
     }
@@ -86,7 +70,7 @@ server {
     # Custom 502 page for JSON clients
     location @backend_down {
         default_type application/json;
-        return 502 '{"error": "Bad Gateway", "message": "Backend service ($API_BASE_URL) is unavailable or starting up. Please retry in a moment."}';
+        return 502 '{"error": "Bad Gateway", "message": "Backend service ($API_BASE_URL) is unavailable. Please check the logs."}';
     }
 }
 EOF
