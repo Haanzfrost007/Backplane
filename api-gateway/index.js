@@ -101,7 +101,7 @@ const genericErrorHandler = (serviceName) => (err, req, res) => {
 // Rutas de proxy
 // Auth Service
 app.use('/auth', createProxyMiddleware({ 
-    target: ensureProtocol(process.env.AUTH_SERVICE_URL) || 'http://auth-service:3000', 
+    target: ensureProtocol(process.env.MANUAL_AUTH_URL || process.env.AUTH_SERVICE_URL) || 'http://auth-service:3000', 
     changeOrigin: true,
     pathRewrite: {
         '^/auth': '',
@@ -113,7 +113,7 @@ app.use('/auth', createProxyMiddleware({
 
 // Payment Service (Uses Custom Circuit Breaker)
 app.use('/payments', paymentLimiter, checkPaymentBreaker, createProxyMiddleware({ 
-    target: ensureProtocol(process.env.PAYMENT_SERVICE_URL) || 'http://payment-service:3001', 
+    target: ensureProtocol(process.env.MANUAL_PAYMENT_URL || process.env.PAYMENT_SERVICE_URL) || 'http://payment-service:3001', 
     changeOrigin: true,
     pathRewrite: {
         '^/payments': '',
@@ -126,7 +126,7 @@ app.use('/payments', paymentLimiter, checkPaymentBreaker, createProxyMiddleware(
 
 // Notification Service
 app.use('/notifications', createProxyMiddleware({ 
-    target: ensureProtocol(process.env.NOTIFICATION_SERVICE_URL) || 'http://notification-service:3002', 
+    target: ensureProtocol(process.env.MANUAL_NOTIFICATION_URL || process.env.NOTIFICATION_SERVICE_URL) || 'http://notification-service:3002', 
     changeOrigin: true,
     pathRewrite: {
         '^/notifications': '',

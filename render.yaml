@@ -13,17 +13,17 @@ services:
         fromService:
           type: web
           name: auth-service
-          property: url
+          property: hostport
       - key: PAYMENT_SERVICE_URL
         fromService:
           type: web
           name: payment-service
-          property: url
+          property: hostport
       - key: NOTIFICATION_SERVICE_URL
         fromService:
           type: web
           name: notification-service
-          property: url
+          property: hostport
 
   # 2. Auth Service
   - type: web
