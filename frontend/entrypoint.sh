@@ -41,26 +41,54 @@ esac
 # Strip trailing slash
 API_BASE_URL=${API_BASE_URL%/}
 
-# --- PRE-RESOLVE HOSTNAME ---
-# Skipped - Relying on System DNS at startup
+# --- 2. WAIT FOR DNS RESOLUTION ---
+# Nginx crashes if the upstream host is not resolvable at startup.
+# We must wait for the hostname to be resolvable before generating the config.
 
-# String Replace Logic only (No DNS)
 TEMP_URL=${API_BASE_URL#*://}
-TEMP_HOST=${TEMP_URL%%:*}
-TEMP_HOST=${TEMP_HOST%%/*}
+TARGET_HOST=${TEMP_URL%%:*}
+TARGET_HOST=${TARGET_HOST%%/*}
 
-# If URL is NOT 'api-gateway', we assume it's the broken Render slug and force-switch it.
-# This assumes we ALWAYS want to use 'api-gateway' for internal comms.
-if [ "$TEMP_HOST" != "api-gateway" ]; then
-    echo "🔄 Forcing switch from '$TEMP_HOST' to stable name 'api-gateway'"
-    API_BASE_URL=$(echo "$API_BASE_URL" | sed "s/$TEMP_HOST/api-gateway/")
-    echo "    -> New API_BASE_URL: $API_BASE_URL"
+echo "Resolving host: $TARGET_HOST"
+
+resolve_with_retries() {
+    local host=$1
+    local retries=30
+    local count=0
+    
+    until nslookup "$host" > /dev/null 2>&1 || [ $count -eq $retries ]; do
+        echo "[$count/$retries] Waiting for DNS resolution of '$host'..."
+        sleep 1
+        count=$((count+1))
+    done
+    
+    if nslookup "$host" > /dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# 1. Try the provided host (Render slug or api-gateway)
+if resolve_with_retries "$TARGET_HOST"; then
+    echo "✅ Host '$TARGET_HOST' is resolvable."
+else
+    echo "⚠️  Host '$TARGET_HOST' failed to resolve after 30s."
+    
+    # 2. Fallback to 'api-gateway' if we weren't already trying it
+    if [ "$TARGET_HOST" != "api-gateway" ]; then
+        echo "🔄 Trying fallback to stable alias 'api-gateway'..."
+        if resolve_with_retries "api-gateway"; then
+            echo "✅ Fallback 'api-gateway' is resolvable!"
+            # Update API_BASE_URL
+            API_BASE_URL=$(echo "$API_BASE_URL" | sed "s/$TARGET_HOST/api-gateway/")
+            echo "    -> New API_BASE_URL: $API_BASE_URL"
+        else
+             echo "❌ Critical: Neither '$TARGET_HOST' nor 'api-gateway' could be resolved."
+             echo "   Nginx will likely crash. Check Render Service Name and networking."
+        fi
+    fi
 fi
-
-echo ">>> FINAL API_BASE_URL: '$API_BASE_URL' <<<"
-
-# --- 2. DETECT SYSTEM DNS ---
-# Skipped - Using System DNS implicitly via static proxy_pass
 
 # --- 3. GENERATE CONFIG FILE ---
 
