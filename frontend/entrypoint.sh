@@ -49,6 +49,7 @@ fi
 echo "Generating Nginx configuration..."
 
 sed -e "s|__API_BASE_URL__|$API_BASE_URL|g" \
+    -e "s|__DNS_RESOLVER__|$DNS_RESOLVER|g" \
     /etc/nginx/default.conf.tpl > /etc/nginx/conf.d/default.conf
 
 echo "Configuration generated. Full content:"
