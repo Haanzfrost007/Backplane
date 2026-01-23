@@ -46,16 +46,9 @@ if [ -z "$API_BASE_URL" ]; then
     exit 1
 fi
 
-echo "Generating Nginx configuration using sed..."
-
-# EXTRAER EL HOSTNAME DE LA URL
-# Si API_BASE_URL es http://api-gateway-30qd:8080, queremos api-gateway-30qd:8080
-# para poder usarlo en upstream_target
-API_HOST=$(echo $API_BASE_URL | sed 's|http://||' | sed 's|https://||')
-echo "Extracted API_HOST='$API_HOST'"
+echo "Generating Nginx configuration..."
 
 sed -e "s|__API_BASE_URL__|$API_BASE_URL|g" \
-    -e "s|__DNS_RESOLVER__|$DNS_RESOLVER|g" \
     /etc/nginx/default.conf.tpl > /etc/nginx/conf.d/default.conf
 
 echo "Configuration generated. Full content:"

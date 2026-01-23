@@ -9,16 +9,11 @@ server {
     }
 
     location /api/ {
-        # Configuración dinámica inyectada por entrypoint.sh
-        resolver __DNS_RESOLVER__ valid=10s;
-        
         # Reescribir la URL para quitar /api/
         rewrite ^/api/(.*) /$1 break;
         
-        # Usamos una variable para forzar la resolución DNS en tiempo de ejecución (runtime)
-        # IMPORTANTE: Definimos la variable ANTES de usarla.
-        set $upstream_target "__API_BASE_URL__";
-        proxy_pass $upstream_target;
+        # Proxy directo sin variables para evitar problemas de resolución en runtime
+        proxy_pass __API_BASE_URL__;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
