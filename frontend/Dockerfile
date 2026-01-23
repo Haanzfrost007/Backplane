@@ -8,6 +8,7 @@ COPY default.conf.template /etc/nginx/default.conf.tpl
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 COPY index.html /usr/share/nginx/html/index.html
+COPY favicon.svg /usr/share/nginx/html/favicon.svg
 
 # Valores por defecto para desarrollo local
 ENV API_BASE_URL=http://api-gateway:8080
