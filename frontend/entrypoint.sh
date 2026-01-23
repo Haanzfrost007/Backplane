@@ -6,6 +6,16 @@ echo ">>> RAW API_BASE_URL: '$API_BASE_URL' <<<"
 echo "Mode: ROBUST DNS + Public/Private Fallback"
 
 # --- 1. SETUP ENV ---
+# Ensure protocol
+case "$API_BASE_URL" in
+  http://*|https://*)
+    ;;
+  *)
+    echo "Adding http:// to API_BASE_URL"
+    export API_BASE_URL="http://$API_BASE_URL"
+    ;;
+esac
+
 API_BASE_URL=${API_BASE_URL%/}
 
 # --- 2. WAIT FOR DNS RESOLUTION ---
