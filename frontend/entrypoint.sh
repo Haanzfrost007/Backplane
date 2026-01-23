@@ -32,6 +32,29 @@ echo "CONFIGURING NGINX WITH:"
 echo "API_BASE_URL = $API_BASE_URL"
 echo "----------------------------------------"
 
+# --- 2. HOST RESOLUTION CHECK ---
+# Extract hostname to check connectivity
+# Remove protocol (http:// or https://)
+HOST_WITHOUT_PROTO=$(echo $API_BASE_URL | sed 's|http://||' | sed 's|https://||')
+HOSTNAME_ONLY=$(echo $HOST_WITHOUT_PROTO | cut -d: -f1)
+PORT_ONLY=$(echo $HOST_WITHOUT_PROTO | cut -d: -f2 -s)
+
+# Default port if missing
+if [ -z "$PORT_ONLY" ]; then
+    PORT_ONLY="80"
+fi
+
+echo "Resolving host: $HOSTNAME_ONLY (Port: $PORT_ONLY)"
+
+# Wait loop (max 60 seconds)
+i=0
+RESOLVED_IP=""
+while [ $i -lt 60 ]; do
+    # Try dig first (cleaner output)
+    if [ -x "$(command -v dig)" ]; then
+        RESOLVED_IP=$(dig +short "$HOSTNAME_ONLY" | head -n1)
+    fi
+
     # Fallback to nslookup if dig failed or returned empty
     if [ -z "$RESOLVED_IP" ]; then
         RESOLVED_IP=$(nslookup "$HOSTNAME_ONLY" 2>/dev/null | awk '/^Address: / { print $2 }' | head -n1)
